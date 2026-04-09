@@ -1,0 +1,16 @@
+{
+  "status": true,
+  "message": "Login successful",
+  "data": {
+    "admin": {
+      "id": 1,
+      "name": "Super Admin",
+      "email": "superadmin@kaaafrika.com",
+      "phone": "+1 (330) 463-5889",
+      "role": null,
+      "permissions": [],
+      "profile_picture": "/public/storage/[]"
+    },
+    "token": "1586|rUATRrzChni2zZTsbI3mJyuqb5GdjUbK1Etnq49k1070c8d2"
+  }
+}

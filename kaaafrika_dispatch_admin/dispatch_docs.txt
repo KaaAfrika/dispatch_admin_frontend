@@ -1,0 +1,1106 @@
+# Dispatch Admin API — Frontend Integration Guide
+
+This document covers every endpoint the React admin frontend needs to build the dispatch operations dashboard. All endpoints are part of the Kaaafrika admin REST API.
+
+---
+
+## Base URL
+
+```
+https://app.kaaafrika.com/api/v1/admin
+```
+
+All endpoints are prefixed with this base URL.
+
+---
+
+## Authentication
+
+### How it works
+
+- Login via `POST /login` to get a bearer token.
+- Include the token in the `Authorization` header on every subsequent request:
+  ```
+  Authorization: Bearer <token>
+  ```
+- Tokens are Sanctum personal access tokens. They do not expire automatically — logout to invalidate.
+- A request with a missing or invalid token returns `401 Unauthorized`.
+
+### Login
+
+```
+POST /login
+```
+
+**Request body:**
+```json
+{
+  "email": "admin@example.com",
+  "password": "secret"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Login successful",
+  "data": {
+    "admin": {
+      "id": 1,
+      "name": "Admin Name",
+      "email": "admin@example.com",
+      "phone": "08012345678",
+      "role": "super_admin",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00.000000Z"
+    },
+    "token": "1|abcdefghijklmnopqrstuvwxyz"
+  }
+}
+```
+
+**Error `401`:**
+```json
+{
+  "status": false,
+  "message": "Invalid credentials",
+  "data": null
+}
+```
+
+### Logout
+
+```
+POST /logout
+```
+> Requires auth. Deletes the current token.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Logged out successfully",
+  "data": null
+}
+```
+
+### Get Profile
+
+```
+GET /profile
+```
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Profile retrieved successfully",
+  "data": { /* admin object, same shape as login */ }
+}
+```
+
+### Update Profile
+
+```
+PUT /profile
+```
+
+**Request body** (all fields optional):
+```json
+{
+  "name": "New Name",
+  "email": "new@email.com",
+  "phone": "08099999999"
+}
+```
+
+---
+
+## Standard Response Envelope
+
+Every response — success or error — uses this shape:
+
+```json
+{
+  "status": true | false,
+  "message": "Human-readable message",
+  "data": { } | [ ] | null
+}
+```
+
+- `status` is a **boolean**, not a string.
+- `data` holds the actual payload on success, `null` on error.
+- Validation errors include an additional `errors` object:
+
+```json
+{
+  "status": false,
+  "message": "First validation error message",
+  "errors": {
+    "field_name": ["Error message here"]
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad request (e.g. insufficient wallet balance) |
+| 401 | Unauthenticated |
+| 403 | Forbidden |
+| 404 | Resource not found |
+| 422 | Validation failed |
+| 500 | Server error |
+
+---
+
+## Pagination
+
+All list endpoints return Laravel paginator objects. The `data` field contains:
+
+```json
+{
+  "data": [ /* array of items */ ],
+  "current_page": 1,
+  "last_page": 5,
+  "per_page": 25,
+  "total": 112,
+  "from": 1,
+  "to": 25,
+  "first_page_url": "...",
+  "last_page_url": "...",
+  "next_page_url": "...",
+  "prev_page_url": null,
+  "path": "..."
+}
+```
+
+> **Note:** For paginated endpoints the actual items are at `response.data.data.data` — the outer `data` is the response envelope, the inner `data` is the paginator.
+
+**Common pagination query params:**
+| Param | Default | Description |
+|-------|---------|-------------|
+| `per_page` | 25 | Items per page |
+| `page` | 1 | Page number |
+
+---
+
+## Dispatcher Endpoints
+
+### List Dispatchers
+
+```
+GET /dispatchers
+```
+
+Returns a paginated list of all dispatchers with their linked user.
+
+**Query params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Search by name or phone number |
+| `status` | `ONLINE` \| `OFFLINE` | Filter by online status |
+| `is_approved` | `0` \| `1` | Filter by approval state |
+| `onboarding_status` | string | Filter by onboarding stage (e.g. `pending_documents`, `approved`) |
+| `from` | date `YYYY-MM-DD` | Created from date |
+| `to` | date `YYYY-MM-DD` | Created to date |
+| `per_page` | int | Items per page (default 25) |
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatchers fetched successfully",
+  "data": {
+    "data": [
+      {
+        "id": 1,
+        "user_id": 42,
+        "name": "John Doe",
+        "image_url": "https://...",
+        "phone_number": "08012345678",
+        "country_code": "+234",
+        "state": "Lagos",
+        "city": "Ikeja",
+        "status": "ONLINE",
+        "vehicle_id": 3,
+        "vehicle_make": "Toyota",
+        "vehicle_model": "Corolla",
+        "vehicle_year": "2019",
+        "vehicle_color": "Black",
+        "license_plate": "LAG-001-AA",
+        "location_latitude": 6.5244,
+        "location_longitude": 3.3792,
+        "preferred_radius_km": 10.0,
+        "onboarding_status": "approved",
+        "documents_status": [],
+        "is_approved": true,
+        "approved_at": "2025-03-01T10:00:00.000000Z",
+        "approved_by": 1,
+        "metadata": null,
+        "created_at": "2025-02-20T09:00:00.000000Z",
+        "updated_at": "2025-03-01T10:00:00.000000Z",
+        "user": {
+          "id": 42,
+          "first_name": "John",
+          "last_name": "Doe",
+          "email": "john@example.com",
+          "phone_number": "08012345678"
+        }
+      }
+    ],
+    "current_page": 1,
+    "last_page": 3,
+    "per_page": 25,
+    "total": 68
+  }
+}
+```
+
+---
+
+### Dispatcher Statistics
+
+```
+GET /dispatchers/statistics
+```
+
+> No query params. Returns all-time aggregate counts.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher statistics fetched successfully",
+  "data": {
+    "total": 68,
+    "online": 12,
+    "approved": 54,
+    "pending_approval": 8,
+    "suspended": 6
+  }
+}
+```
+
+**Status definitions:**
+- `online` — `status = ONLINE`
+- `approved` — `is_approved = true`
+- `pending_approval` — `is_approved = false` AND `onboarding_status != approved` (never been approved yet)
+- `suspended` — `is_approved = false` AND `onboarding_status = approved` (was approved, then revoked)
+
+---
+
+### Live Dispatcher Locations
+
+```
+GET /dispatchers/locations
+```
+
+Lightweight endpoint for the live map. Returns only online dispatchers that have GPS coordinates. Poll this every 30 seconds.
+
+> No query params. No pagination.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher locations fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "phone_number": "08012345678",
+      "location_latitude": 6.5244,
+      "location_longitude": 3.3792,
+      "status": "ONLINE"
+    }
+  ]
+}
+```
+
+---
+
+### Get Single Dispatcher
+
+```
+GET /dispatchers/{id}
+```
+
+Returns full dispatcher profile including all personal documents, vehicle documents, and a count of total deliveries.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher fetched successfully",
+  "data": {
+    "id": 1,
+    "name": "John Doe",
+    "is_approved": true,
+    "onboarding_status": "approved",
+    "status": "ONLINE",
+    "vehicle_make": "Toyota",
+    "vehicle_model": "Corolla",
+    "license_plate": "LAG-001-AA",
+    "location_latitude": 6.5244,
+    "location_longitude": 3.3792,
+    "deliveries_count": 34,
+    "user": { "id": 42, "email": "john@example.com", "phone_number": "..." },
+    "documents": [
+      {
+        "id": 10,
+        "dispatcher_id": 1,
+        "document_type": "national_id",
+        "file_url": "https://...",
+        "status": "approved",
+        "rejection_reason": null,
+        "reviewed_at": "2025-03-01T10:00:00.000000Z",
+        "reviewed_by": 1,
+        "metadata": null,
+        "created_at": "...",
+        "updated_at": "..."
+      }
+    ],
+    "vehicle_documents": [
+      {
+        "id": 5,
+        "dispatcher_id": 1,
+        "document_type": "vehicle_registration",
+        "file_url": "https://...",
+        "status": "pending",
+        "rejection_reason": null,
+        "reviewed_at": null,
+        "reviewed_by": null
+      }
+    ]
+  }
+}
+```
+
+**Document `status` values:** `pending` | `approved` | `rejected`
+
+---
+
+### Dispatcher Wallet & Transactions
+
+```
+GET /dispatchers/{id}/wallet
+```
+
+Returns the dispatcher's wallet balance and a paginated list of wallet transactions.
+
+**Query params:**
+| Param | Default | Description |
+|-------|---------|-------------|
+| `page` | 1 | Page number |
+| `per_page` | 15 | Items per page |
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Wallet fetched successfully",
+  "data": {
+    "balance": "4500.00",
+    "bonus_balance": "500.00",
+    "transactions": {
+      "data": [
+        {
+          "id": 101,
+          "wallet_id": 7,
+          "transaction_type": "credit",
+          "amount": "1000.00",
+          "description": "Delivery payout",
+          "reference": "CR_abc123",
+          "status": "completed",
+          "user_id": 42,
+          "created_at": "2025-03-15T14:00:00.000000Z"
+        }
+      ],
+      "current_page": 1,
+      "last_page": 4,
+      "per_page": 15,
+      "total": 52
+    }
+  }
+}
+```
+
+**Transaction `transaction_type` values:** `credit` | `debit`
+
+---
+
+### Dispatcher Delivery History
+
+```
+GET /dispatchers/{id}/deliveries
+```
+
+Returns a paginated list of deliveries assigned to this dispatcher, with the associated user (sender).
+
+**Query params:** `per_page` (default 25), `page`
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher deliveries fetched successfully",
+  "data": {
+    "data": [
+      {
+        "id": 55,
+        "tracking_code": "DEL-XXXXXX",
+        "status": "delivered",
+        "payment_status": "paid",
+        "total_amount": 2500.0,
+        "payout_amount": 2000.0,
+        "payout_status": "paid",
+        "pickup_address": "12 Main St, Lagos",
+        "dropoff_address": "5 Victory Ave, Abuja",
+        "delivered_at": "2025-03-14T18:30:00.000000Z",
+        "created_at": "2025-03-14T15:00:00.000000Z",
+        "user": {
+          "id": 99,
+          "first_name": "Chidi",
+          "last_name": "Okafor",
+          "phone_number": "08099887766"
+        }
+      }
+    ],
+    "current_page": 1,
+    "total": 34
+  }
+}
+```
+
+---
+
+### Approve Dispatcher
+
+```
+POST /dispatchers/{id}/approve
+```
+
+Sets `is_approved = true`, `onboarding_status = approved`, and records who approved. No request body required.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher approved successfully",
+  "data": {
+    "id": 1,
+    "is_approved": true,
+    "onboarding_status": "approved",
+    "approved_at": "2026-03-29T10:00:00.000000Z",
+    "approved_by": 1
+  }
+}
+```
+
+---
+
+### Suspend Dispatcher
+
+```
+POST /dispatchers/{id}/suspend
+```
+
+Sets `is_approved = false`. The suspension reason and metadata are stored internally.
+
+**Request body** (optional):
+```json
+{
+  "reason": "Repeated policy violations"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Dispatcher suspended successfully",
+  "data": {
+    "id": 1,
+    "is_approved": false,
+    "onboarding_status": "approved",
+    "metadata": {
+      "suspension_reason": "Repeated policy violations",
+      "suspended_at": "2026-03-29T10:00:00+00:00",
+      "suspended_by": 1
+    }
+  }
+}
+```
+
+---
+
+### Review Personal Document
+
+```
+POST /dispatchers/{id}/documents/{docId}/review
+```
+
+Approve or reject a personal identity document (e.g. national ID, driver's license).
+
+**Request body:**
+```json
+{
+  "action": "approved"
+}
+```
+```json
+{
+  "action": "rejected",
+  "reason": "Image is blurry and unreadable"
+}
+```
+
+> `reason` is **required** when `action` is `rejected`.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Document reviewed successfully",
+  "data": {
+    "id": 10,
+    "dispatcher_id": 1,
+    "document_type": "national_id",
+    "file_url": "https://...",
+    "status": "approved",
+    "rejection_reason": null,
+    "reviewed_at": "2026-03-29T10:00:00.000000Z",
+    "reviewed_by": 1
+  }
+}
+```
+
+**Error `404`:** Returned if the `docId` does not belong to the specified dispatcher (security check).
+
+---
+
+### Review Vehicle Document
+
+```
+POST /dispatchers/{id}/vehicle-documents/{docId}/review
+```
+
+Same interface as personal document review, but applies to vehicle-related documents (registration, insurance, etc.).
+
+**Request body:** identical to personal document review.
+
+**Response `200`:** same shape as personal document review.
+
+---
+
+### Credit Dispatcher Wallet
+
+```
+POST /dispatchers/{id}/wallet/credit
+```
+
+Adds funds to the dispatcher's wallet. Creates a transaction record with type `credit`.
+
+**Request body:**
+```json
+{
+  "amount": 5000,
+  "description": "Bonus payout for March"
+}
+```
+
+> `amount` must be a positive number, minimum `1`.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Wallet credited successfully",
+  "data": {
+    "id": 7,
+    "user_id": 42,
+    "balance": "9500.00",
+    "credit_balance": "0.00",
+    "referral_balance": "0.00",
+    "bonus_balance": "500.00",
+    "subscription_balance": "0.00"
+  }
+}
+```
+
+---
+
+### Debit Dispatcher Wallet
+
+```
+POST /dispatchers/{id}/wallet/debit
+```
+
+Deducts funds from the dispatcher's wallet. Creates a transaction record with type `debit`.
+
+**Request body:**
+```json
+{
+  "amount": 1000,
+  "description": "Chargeback adjustment"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Wallet debited successfully",
+  "data": { /* updated wallet object */ }
+}
+```
+
+**Error `400`** — returned when balance is insufficient (do not treat as 500):
+```json
+{
+  "status": false,
+  "message": "Insufficient balance",
+  "data": null
+}
+```
+
+---
+
+## Delivery Endpoints
+
+### List Deliveries
+
+```
+GET /deliveries
+```
+
+> This route is **not** inside the auth middleware group on the server. Include your auth header anyway — it will not break anything. Future versions may enforce auth here.
+
+**Query params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Search by tracking code, or sender name/phone |
+| `status` | string | Filter by delivery status (see values below) |
+| `payment_status` | string | `pending` \| `paid` \| `failed` |
+| `from` | date | Created from date `YYYY-MM-DD` |
+| `to` | date | Created to date `YYYY-MM-DD` |
+| `per_page` | int | Default 25 |
+
+**Delivery `status` values:**
+`pending` | `assigned` | `accepted` | `picked_up` | `delivering` | `delivered` | `cancelled`
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Operation successful",
+  "data": {
+    "data": [
+      {
+        "id": 55,
+        "tracking_code": "DEL-XXXXXX",
+        "user_id": 99,
+        "dispatcher_id": 1,
+        "status": "delivered",
+        "payment_status": "paid",
+        "payment_method": "wallet",
+        "currency": "NGN",
+        "base_fare": 1800.0,
+        "total_amount": 2500.0,
+        "payout_amount": 2000.0,
+        "payout_status": "paid",
+        "pickup_address": "12 Main St, Lagos",
+        "pickup_contact_name": "Ada Obi",
+        "pickup_contact_phone": "08011112222",
+        "dropoff_address": "5 Victory Ave, Abuja",
+        "dropoff_contact_name": "Emeka Nwosu",
+        "dropoff_contact_phone": "08033334444",
+        "assigned_at": "2025-03-14T15:10:00.000000Z",
+        "accepted_at": "2025-03-14T15:12:00.000000Z",
+        "picked_up_at": "2025-03-14T16:00:00.000000Z",
+        "delivered_at": "2025-03-14T18:30:00.000000Z",
+        "paid_at": "2025-03-14T18:35:00.000000Z",
+        "created_at": "2025-03-14T15:00:00.000000Z",
+        "user": { "id": 99, "first_name": "Chidi", "last_name": "Okafor" },
+        "dispatcher": { "id": 1, "name": "John Doe" }
+      }
+    ],
+    "current_page": 1,
+    "total": 234
+  }
+}
+```
+
+---
+
+### Get Single Delivery
+
+```
+GET /deliveries/{id}
+```
+
+Returns full delivery detail including user, dispatcher, tracking step timeline, and any reported issues.
+
+> `{id}` is the delivery's numeric database ID.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Operation successful",
+  "data": {
+    "id": 55,
+    "tracking_code": "DEL-XXXXXX",
+    "status": "delivered",
+    "package_description": "Fragile electronics",
+    "package_value": 85000.0,
+    "weight": 2.5,
+    "pickup_address": "12 Main St, Lagos",
+    "pickup_latitude": 6.5244,
+    "pickup_longitude": 3.3792,
+    "pickup_contact_name": "Ada Obi",
+    "pickup_contact_phone": "08011112222",
+    "pickup_notes": "Call on arrival",
+    "dropoff_address": "5 Victory Ave, Abuja",
+    "dropoff_latitude": 9.0765,
+    "dropoff_longitude": 7.3986,
+    "dropoff_contact_name": "Emeka Nwosu",
+    "dropoff_contact_phone": "08033334444",
+    "base_fare": 1800.0,
+    "total_amount": 2500.0,
+    "payout_amount": 2000.0,
+    "payout_status": "paid",
+    "payment_method": "wallet",
+    "payment_status": "paid",
+    "otp_required": true,
+    "assigned_at": "...",
+    "accepted_at": "...",
+    "picked_up_at": "...",
+    "delivered_at": "...",
+    "paid_at": "...",
+    "user": { "id": 99, "first_name": "Chidi", "last_name": "Okafor" },
+    "dispatcher": { "id": 1, "name": "John Doe", "phone_number": "..." },
+    "tracking_steps": [
+      {
+        "id": 1,
+        "delivery_id": 55,
+        "step": "assigned",
+        "description": "Dispatcher assigned",
+        "created_at": "..."
+      }
+    ],
+    "issues": []
+  }
+}
+```
+
+---
+
+### Get Delivery OTP
+
+```
+GET /deliveries/{id}/otp
+```
+
+Retrieves the most recent OTP record for a delivery.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Delivery OTP fetched successfully",
+  "data": {
+    "id": 12,
+    "delivery_id": 55,
+    "code": "4821",
+    "is_used": false,
+    "created_at": "..."
+  }
+}
+```
+
+**Error `404`:** No OTP found for this delivery.
+
+---
+
+### Confirm Delivery
+
+```
+POST /deliveries/{id}/confirm
+```
+
+Marks the delivery as confirmed/delivered by admin.
+
+**Response `200`:** Updated delivery object.
+
+---
+
+### Cancel Delivery
+
+```
+POST /deliveries/{id}/cancel
+```
+
+**Request body:**
+```json
+{
+  "reason": "Customer request"
+}
+```
+
+**Response `200`:** Updated delivery object.
+
+---
+
+### Delivery Statistics
+
+```
+GET /deliveries/statistics
+```
+
+> Requires auth. Returns delivery counts, revenue, and daily volumes for a given period.
+
+**Query params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `period` | string | `today` (default) \| `yesterday` \| `week` \| `month` \| `custom` |
+| `date_from` | date | Required when `period=custom`. Format: `YYYY-MM-DD` |
+| `date_to` | date | Required when `period=custom`. Format: `YYYY-MM-DD` |
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Delivery statistics fetched successfully",
+  "data": {
+    "status_counts": {
+      "pending": 12,
+      "assigned": 5,
+      "delivered": 89,
+      "cancelled": 7
+    },
+    "total_revenue": 245000.00,
+    "total_payout": 196000.00,
+    "daily_volumes": [
+      { "date": "2026-03-22", "count": 14 },
+      { "date": "2026-03-23", "count": 19 }
+    ],
+    "period": {
+      "name": "week",
+      "from": "2026-03-22",
+      "to": "2026-03-29"
+    }
+  }
+}
+```
+
+> `status_counts` is a key-value map. Only statuses that have at least one delivery in the period will appear.
+
+---
+
+### Reassign Delivery
+
+```
+POST /deliveries/{id}/reassign
+```
+
+> Requires auth. Reassigns the delivery to a different dispatcher and resets status to `assigned`.
+
+**Request body:**
+```json
+{
+  "dispatcher_id": 7
+}
+```
+
+> `dispatcher_id` must exist in the dispatchers table.
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Delivery reassigned successfully",
+  "data": {
+    "id": 55,
+    "dispatcher_id": 7,
+    "status": "assigned",
+    "assigned_at": "2026-03-29T11:00:00.000000Z",
+    "dispatcher": {
+      "id": 7,
+      "name": "Jane Smith",
+      "phone_number": "08055556666"
+    },
+    "user": { "id": 99, "first_name": "Chidi" }
+  }
+}
+```
+
+---
+
+### Update Delivery Payout Status
+
+```
+PATCH /deliveries/{id}/payment
+```
+
+> Requires auth. Manually updates the dispatcher's payout status for a delivery. Setting to `paid` automatically records `paid_at`.
+
+**Request body:**
+```json
+{
+  "payout_status": "paid"
+}
+```
+
+> `payout_status` must be one of: `pending` | `paid` | `failed`
+
+**Response `200`:**
+```json
+{
+  "status": true,
+  "message": "Delivery payment status updated successfully",
+  "data": {
+    "id": 55,
+    "payout_status": "paid",
+    "paid_at": "2026-03-29T11:05:00.000000Z"
+  }
+}
+```
+
+---
+
+## Other Useful Endpoints
+
+### Dashboard Summary
+
+```
+GET /dashboard
+```
+
+Returns a high-level platform summary for the main dashboard page.
+
+**Query params:**
+| Param | Description |
+|-------|-------------|
+| `period` | `today` \| `yesterday` \| `week` \| `month` (default `today`) |
+
+**Response includes:** user counts, driver counts, ride stats, transaction totals, `dispatches_by_day` chart data array.
+
+---
+
+### Wallet Transactions (Global)
+
+```
+GET /wallet-transactions
+```
+
+Global ledger of all wallet transactions across all users.
+
+**Query params:** `per_page`, `page`, date filters if supported.
+
+---
+
+### Send Notification to User
+
+```
+POST /notifications/send-to-user
+```
+
+**Request body:**
+```json
+{
+  "user_id": 42,
+  "title": "Payout processed",
+  "body": "Your March payout has been processed."
+}
+```
+
+---
+
+## Data Reference
+
+### Dispatcher Object Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | |
+| `user_id` | int | Linked user account |
+| `name` | string | Display name |
+| `phone_number` | string | Contact phone |
+| `status` | `ONLINE` \| `OFFLINE` | Current availability |
+| `is_approved` | boolean | Approved to operate |
+| `onboarding_status` | string | `pending_documents` \| `approved` |
+| `location_latitude` | float \| null | Current GPS latitude |
+| `location_longitude` | float \| null | Current GPS longitude |
+| `preferred_radius_km` | float | Service radius preference |
+| `vehicle_make` | string | |
+| `vehicle_model` | string | |
+| `vehicle_year` | string | |
+| `vehicle_color` | string | |
+| `license_plate` | string | |
+| `approved_at` | datetime \| null | When approved |
+| `approved_by` | int \| null | Admin ID who approved |
+| `metadata` | object \| null | Suspension details if suspended |
+
+### Dispatcher Status Logic
+
+| `is_approved` | `onboarding_status` | Display as |
+|---|---|---|
+| `true` | `approved` | Active / Approved |
+| `false` | `pending_documents` (or any non-approved) | Pending Approval |
+| `false` | `approved` | Suspended |
+
+### Delivery Object Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | |
+| `tracking_code` | string | Human-readable tracking ID |
+| `status` | string | See status values below |
+| `payment_status` | `pending` \| `paid` \| `failed` | Customer payment |
+| `payment_method` | `cash` \| `wallet` \| `card` | |
+| `base_fare` | float | Base delivery cost |
+| `total_amount` | float | Total charged to customer |
+| `payout_amount` | float | Amount owed to dispatcher |
+| `payout_status` | `pending` \| `paid` \| `failed` | Dispatcher payout state |
+| `otp_required` | boolean | Whether OTP confirmation needed |
+| `assigned_at` | datetime \| null | When dispatcher was assigned |
+| `accepted_at` | datetime \| null | When dispatcher accepted |
+| `picked_up_at` | datetime \| null | When parcel was collected |
+| `delivered_at` | datetime \| null | When delivery was completed |
+| `cancelled_at` | datetime \| null | When delivery was cancelled |
+| `paid_at` | datetime \| null | When payout was marked paid |
+
+### Delivery Status Flow
+
+```
+pending → assigned → accepted → picked_up → delivering → delivered
+                                                        ↘
+                                                       cancelled
+```
+
+### Document Status Values
+
+| Value | Meaning |
+|-------|---------|
+| `pending` | Awaiting admin review |
+| `approved` | Accepted |
+| `rejected` | Rejected (has `rejection_reason`) |
+
+---
+
+## Error Handling Quick Reference
+
+| Scenario | HTTP Code | `status` | What to show |
+|----------|-----------|----------|--------------|
+| Wrong credentials | 401 | false | "Invalid credentials" |
+| Token missing/expired | 401 | false | Redirect to login |
+| Resource not found | 404 | false | "Not found" message |
+| Validation failed | 422 | false | Show `errors` field per-field |
+| Insufficient wallet balance | 400 | false | Show `message` field |
+| Server error | 500 | false | Generic error toast |

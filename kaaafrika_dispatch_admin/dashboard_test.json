@@ -1,0 +1,103 @@
+{
+  "success": true,
+  "message": "Dashboard statistics fetched successfully",
+  "data": {
+    "users": {
+      "total": 670,
+      "new": 0,
+      "active": 0,
+      "user_with_completed_profile": 233
+    },
+    "drivers": {
+      "total": 67,
+      "new": 0,
+      "active": 35
+    },
+    "rides": {
+      "total": 0,
+      "completed": 0,
+      "cancelled": 0
+    },
+    "transactions": {
+      "total_revenue": 0,
+      "yesterday_sales": 0,
+      "month_sales": 0,
+      "last_month_sales": 3748.96,
+      "successful": 0
+    },
+    "dispatches": {
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "cancelled": 0,
+      "revenue": 0
+    },
+    "dispatchers": {
+      "total": 4,
+      "active": 2,
+      "new": 0
+    },
+    "charts": {
+      "revenue_by_day": [],
+      "rides_by_day": [],
+      "dispatches_by_day": [],
+      "dispatch_revenue_by_day": []
+    },
+    "total_complaints": 0,
+    "top_cities": [
+      {
+        "city": "calabar",
+        "total_rides": 145,
+        "total_revenue": "33300.00"
+      },
+      {
+        "city": "Cross River",
+        "total_rides": 81,
+        "total_revenue": "43300.00"
+      },
+      {
+        "city": "Abak",
+        "total_rides": 13,
+        "total_revenue": "8300.00"
+      },
+      {
+        "city": "Ugep",
+        "total_rides": 8,
+        "total_revenue": "4700.00"
+      },
+      {
+        "city": "Lagos",
+        "total_rides": 3,
+        "total_revenue": "3600.00"
+      }
+    ],
+    "top_cancel_reasons": [],
+    "top_ride_types": [
+      {
+        "ride_type": "Budget Ride",
+        "total_rides": 362,
+        "total_revenue": "137100.00"
+      },
+      {
+        "ride_type": "Elite Ride",
+        "total_rides": 41,
+        "total_revenue": "39000.00"
+      },
+      {
+        "ride_type": "Plus Ride",
+        "total_rides": 22,
+        "total_revenue": "20900.00"
+      },
+      {
+        "ride_type": "Comfort Ride",
+        "total_rides": 3,
+        "total_revenue": "2200.00"
+      }
+    ],
+    "driver_category_performance": [],
+    "period": {
+      "from": "2026-04-01",
+      "to": "2026-04-01"
+    }
+  }
+}
