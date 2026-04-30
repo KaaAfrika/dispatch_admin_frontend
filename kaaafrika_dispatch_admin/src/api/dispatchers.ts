@@ -105,4 +105,20 @@ export const dispatchersApi = {
     );
     return data;
   },
+
+  update: async (id: number, payload: Partial<Dispatcher>) => {
+    const { data } = await apiClient.put<ApiResponse<DispatcherDetail>>(`/dispatchers/${id}`, payload);
+    return data;
+  },
+
+  reverseWalletTransaction: async (id: number, transactionId: number, reason?: string) => {
+    const { data } = await apiClient.post<
+      ApiResponse<{
+        original_transaction_id: number;
+        reversal_transaction_id: number;
+        wallet_balance: string;
+      }>
+    >(`/dispatchers/${id}/wallet/reverse/${transactionId}`, { reason });
+    return data;
+  },
 };

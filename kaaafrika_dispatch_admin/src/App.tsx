@@ -13,6 +13,7 @@ import { DeliveryDetailPage } from './pages/deliveries/DeliveryDetailPage';
 import { WalletPage } from './pages/wallet/WalletPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { LiveMapPage } from './pages/live-map/LiveMapPage';
+import { ActivityLogsPage } from './pages/activity-logs/ActivityLogsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="deliveries/:id" element={<DeliveryDetailPage />} />
               <Route path="live-map" element={<LiveMapPage />} />
               <Route path="wallet" element={<WalletPage />} />
+              <Route path="activity-logs" element={<ActivityLogsPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
 
