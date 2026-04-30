@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  History,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/dispatchers',  icon: Truck,           label: 'Dispatchers' },
   { to: '/deliveries',   icon: Package,         label: 'Delivery History'  },
   { to: '/wallet',       icon: Wallet,          label: 'Wallet'      },
+  { to: '/activity-logs',icon: History,         label: 'Audit Trail' },
   { to: '/settings',     icon: Settings,        label: 'Settings'    },
 ];
 

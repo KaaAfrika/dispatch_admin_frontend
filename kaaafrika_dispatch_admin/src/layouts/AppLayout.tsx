@@ -8,6 +8,7 @@ const pageTitles: Record<string, string> = {
   '/deliveries':   'Deliveries',
   '/live-map':     'Live Map',
   '/wallet':       'Wallet Transactions',
+  '/activity-logs':'Audit Trail',
   '/settings':     'Settings',
 };
 

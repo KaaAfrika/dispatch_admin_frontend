@@ -11,6 +11,20 @@ export interface Admin {
   created_at: string;
 }
 
+// User types
+export interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  suspended_at: string | null;
+  suspension_reason: string | null;
+  suspended_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Dispatcher types
 export type DispatcherStatus = 'ONLINE' | 'OFFLINE';
 export type OnboardingStatus = 'pending_documents' | 'approved';
@@ -65,6 +79,7 @@ export interface DispatcherMetadata {
   suspension_reason?: string;
   suspended_at?: string;
   suspended_by?: number;
+  reversed_by?: number;
 }
 
 export interface DocumentReview {
@@ -108,7 +123,7 @@ export type DeliveryStatus =
   | 'delivered'
   | 'cancelled';
 
-export type PaymentStatus = 'pending' | 'paid' | 'failed';
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PayoutStatus = 'pending' | 'paid' | 'failed';
 
 export interface Delivery {
@@ -159,6 +174,26 @@ export interface DeliveryDetail extends Delivery {
   otp_required: boolean;
   tracking_steps: TrackingStep[];
   issues: DeliveryIssue[];
+  metadata?: {
+    fare_overrides?: Array<{
+      before: Record<string, number>;
+      after: Record<string, number>;
+      admin_id: number;
+      reason: string;
+      timestamp: string;
+    }>;
+    refunds?: Array<{
+      amount: number;
+      reason: string;
+      admin_id: number;
+      timestamp: string;
+    }>;
+    force_complete?: {
+      admin_id: number;
+      reason: string;
+      timestamp: string;
+    };
+  };
 }
 
 export interface DeliveryOtp {
@@ -179,7 +214,14 @@ export interface TrackingStep {
 
 export interface DeliveryIssue {
   id: number;
+  delivery_id: number;
+  reported_by: number;
+  type: string;
   description: string;
+  status: 'open' | 'resolved';
+  resolution_notes: string | null;
+  resolved_at: string | null;
+  resolved_by: number | null;
   created_at: string;
 }
 
@@ -195,6 +237,30 @@ export interface DeliveryStats {
   };
 }
 
+export interface DeliveryCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  surcharge: number;
+  max_weight_kg: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeliveryVehicle {
+  id: number;
+  code: string;
+  type: string;
+  vehicle: string;
+  description: string | null;
+  max_weight_kg: number;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Wallet types
 export interface WalletTransaction {
   id: number;
@@ -206,6 +272,10 @@ export interface WalletTransaction {
   status: string;
   user_id: number;
   created_at: string;
+  metadata?: {
+    reversed_by?: number;
+    reason?: string;
+  };
   wallet?: {
     user?: {
       first_name: string;
@@ -219,6 +289,41 @@ export interface Wallet {
   balance: string;
   bonus_balance: string;
   transactions: PaginatedResponse<WalletTransaction>;
+}
+
+// Settings & Pricing
+export interface PricingSetting {
+  key: string;
+  value: string;
+  type: string;
+}
+
+// Activity Logs
+export interface ActivityLog {
+  id: number;
+  log_name: string;
+  description: string;
+  subject_type: string;
+  subject_id: number;
+  causer_type: string;
+  causer_id: number;
+  properties: {
+    reason?: string;
+    before?: Record<string, any>;
+    after?: Record<string, any>;
+    [key: string]: any;
+  };
+  event: string;
+  created_at: string;
+  causer: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
+  subject: {
+    id: number;
+    [key: string]: any;
+  } | null;
 }
 
 // Pagination
@@ -276,3 +381,17 @@ export interface DeliveryFilters {
   per_page?: number;
   page?: number;
 }
+
+export interface ActivityLogFilters {
+  log_name?: string;
+  causer_id?: number;
+  causer_type?: string;
+  subject_type?: string;
+  subject_id?: number;
+  event?: string;
+  from?: string;
+  to?: string;
+  per_page?: number;
+  page?: number;
+}
+
